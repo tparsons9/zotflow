@@ -289,6 +289,7 @@ function runChecks(root) {
     const npm = process.platform === "win32" ? "npm.cmd" : "npm";
     for (const [cwd, args] of [
         [root, ["test"]],
+        [root, ["run", "test:personal"]],
         [join(root, "reader/reader"), ["test"]],
         [root, ["run", "build:ci"]],
     ]) {
@@ -319,6 +320,7 @@ export function installPersonal({
             source,
             steps: [
                 "npm test",
+                "npm run test:personal",
                 "reader npm test",
                 "npm run build:ci",
                 "back up and copy managed artifacts",

@@ -1,17 +1,15 @@
-name: CI
+name: Personal CI
 
 on:
     push:
         branches:
-            - master
-            - dev
+            - personal
     pull_request:
         branches:
-            - master
-            - dev
+            - personal
 
 concurrency:
-    group: ci-${{ github.workflow }}-${{ github.ref }}
+    group: personal-ci-${{ github.ref }}
     cancel-in-progress: true
 
 permissions:
@@ -19,6 +17,7 @@ permissions:
 
 jobs:
     test:
+        if: github.repository == 'tparsons9/zotflow'
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -34,8 +33,14 @@ jobs:
             - name: Install dependencies
               run: npm ci
 
-            - name: Test
+            - name: Test upstream functionality
               run: npm test
+
+            - name: Test personal tooling
+              run: npm run test:personal
 
             - name: Build release artifacts
               run: npm run build:ci
+
+            - name: Test reader
+              run: npm test --prefix reader/reader
