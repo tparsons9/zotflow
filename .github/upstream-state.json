@@ -7,7 +7,7 @@
     },
     "reader": {
         "repository": "duanxianpi/obsidian-zotero-reader",
-        "branch": "master",
+        "tracking": "zotflow-release-pin",
         "commit": "e6dfec2857b1e008a416832e1bd9df868513b035"
     }
 }

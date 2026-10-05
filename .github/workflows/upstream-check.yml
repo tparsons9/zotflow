@@ -25,5 +25,5 @@ jobs:
             - uses: actions/setup-node@v4
               with:
                   node-version: 22
-            - name: Check releases and reader commits
+            - name: Check stable releases and their reader pins
               run: node scripts/upstream-check.mjs

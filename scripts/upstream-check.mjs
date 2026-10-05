@@ -83,10 +83,10 @@ export function validateState(state) {
     if (
         !stable.test(state.zotflow.tag) ||
         !SHA.test(state.zotflow.developmentBase ?? "") ||
-        state.reader.branch !== "master"
+        state.reader.tracking !== "zotflow-release-pin"
     ) {
         throw new Error(
-            "Expected stable ZotFlow provenance and reader master tracking.",
+            "Expected stable ZotFlow provenance and release-pinned reader tracking.",
         );
     }
 }
@@ -110,10 +110,10 @@ function managedBody(target, targets) {
     const lines = [
         START,
         `<!-- zotflow-upstream:${JSON.stringify(meta)} -->`,
-        `@tparsons9 — an upstream ${target.source === "reader" ? "reader update" : "stable ZotFlow release"} is available.`,
+        "@tparsons9 — an upstream stable ZotFlow release is available.",
         "",
         `Adopted upstream commit: [${target.base.slice(0, 7)}](https://github.com/${target.repository}/commit/${target.base})`,
-        `Available: [${target.tag ?? target.commit.slice(0, 7)}](${target.url})`,
+        `Available: [${target.tag}](${target.url})`,
         `[Compare changes](https://github.com/${target.repository}/compare/${target.base}...${target.commit})`,
         `Comparison: **${target.comparison}**. Review divergent histories before merging.`,
         "",
@@ -121,10 +121,11 @@ function managedBody(target, targets) {
     if (target.readerPin)
         lines.push(
             `This release pins reader commit [${target.readerPin.slice(0, 7)}](https://github.com/${SOURCES.reader}/commit/${target.readerPin}).`,
+            `[Compare reader changes](https://github.com/${SOURCES.reader}/compare/${target.readerBase}...${target.readerPin})`,
             "",
         );
     lines.push(
-        "Review on a branch based on personal. Merge the upstream reader changes you need into your personal reader first, push its commit to your reader fork, then commit the matching parent submodule pin. For a ZotFlow release, merge its exact tag and coordinate the reader pin. Preserve custom annotation features and the fork submodule URL.",
+        "Review on a branch based on personal. Inspect this release's pinned reader changes and merge the changes you need into your personal reader first. Push its reviewed commit to your reader fork, then merge the exact ZotFlow release tag and commit the matching custom reader pin. Preserve custom annotation features and the fork submodule URL.",
         "",
         "Run checks, update .github/upstream-state.json only for upstream commits actually integrated, and merge the reviewed result into personal. Close readers and disable ZotFlow before running npm run install:personal; enable it again afterward.",
         "",
@@ -149,7 +150,7 @@ async function ensureLabel(client) {
 
 export async function discoverTargets(client, state) {
     validateState(state);
-    // Gather all source data before any issue writes: a failed source cannot look current.
+    // Published stable releases are the only alert trigger; branch heads are never queried.
     const release = await client.request(
         "GET",
         `/repos/${SOURCES.zotflow}/releases/latest`,
@@ -162,13 +163,35 @@ export async function discoverTargets(client, state) {
         "GET",
         `/repos/${SOURCES.zotflow}/commits/${encodeURIComponent(release.tag_name)}`,
     );
-    const readerCommit = await client.request(
-        "GET",
-        `/repos/${SOURCES.reader}/commits/master`,
-    );
-    if (!SHA.test(zotflowCommit.sha) || !SHA.test(readerCommit.sha))
+    if (!SHA.test(zotflowCommit.sha))
         throw new Error("Invalid upstream commit response.");
-    const candidates = [
+    if (
+        zotflowCommit.sha === state.zotflow.commit &&
+        release.tag_name === state.zotflow.tag
+    )
+        return [];
+    const comparison = await client.request(
+        "GET",
+        `/repos/${SOURCES.zotflow}/compare/${state.zotflow.commit}...${zotflowCommit.sha}`,
+    );
+    if (
+        !["ahead", "behind", "identical", "diverged"].includes(
+            comparison.status,
+        )
+    )
+        throw new Error("Unknown upstream comparison status.");
+    if (comparison.status === "behind") return [];
+    // Read the reader pin from the immutable release tree before any issue writes.
+    const tree = await client.request(
+        "GET",
+        `/repos/${SOURCES.zotflow}/git/trees/${zotflowCommit.sha}?recursive=1`,
+    );
+    const pin = tree.tree?.find(
+        (entry) => entry.path === "reader/reader" && entry.mode === "160000",
+    )?.sha;
+    if (tree.truncated || !SHA.test(pin ?? ""))
+        throw new Error("Cannot read release reader pin.");
+    return [
         {
             source: "zotflow",
             repository: SOURCES.zotflow,
@@ -177,51 +200,11 @@ export async function discoverTargets(client, state) {
             base: state.zotflow.commit,
             key: `${release.tag_name}:${zotflowCommit.sha}`,
             url: `https://github.com/${SOURCES.zotflow}/releases/tag/${release.tag_name}`,
-        },
-        {
-            source: "reader",
-            repository: SOURCES.reader,
-            commit: readerCommit.sha,
-            base: state.reader.commit,
-            key: readerCommit.sha,
-            url: `https://github.com/${SOURCES.reader}/commit/${readerCommit.sha}`,
+            comparison: comparison.status,
+            readerPin: pin,
+            readerBase: state.reader.commit,
         },
     ];
-    const targets = [];
-    for (const target of candidates) {
-        if (
-            target.commit === target.base &&
-            (target.source !== "zotflow" || target.tag === state.zotflow.tag)
-        )
-            continue;
-        const comparison = await client.request(
-            "GET",
-            `/repos/${target.repository}/compare/${target.base}...${target.commit}`,
-        );
-        if (
-            !["ahead", "behind", "identical", "diverged"].includes(
-                comparison.status,
-            )
-        )
-            throw new Error("Unknown upstream comparison status.");
-        if (comparison.status === "behind") continue;
-        target.comparison = comparison.status;
-        if (target.source === "zotflow") {
-            const tree = await client.request(
-                "GET",
-                `/repos/${SOURCES.zotflow}/git/trees/${target.commit}?recursive=1`,
-            );
-            const pin = tree.tree?.find(
-                (entry) =>
-                    entry.path === "reader/reader" && entry.mode === "160000",
-            )?.sha;
-            if (tree.truncated || !SHA.test(pin ?? ""))
-                throw new Error("Cannot read release reader pin.");
-            target.readerPin = pin;
-        }
-        targets.push(target);
-    }
-    return targets;
 }
 
 export async function checkUpstream({
@@ -263,10 +246,7 @@ export async function checkUpstream({
             ...(existing ? marker(existing).targets : []),
             target.key,
         ];
-        const title =
-            target.source === "reader"
-                ? `Upstream reader updates available (${target.commit.slice(0, 7)})`
-                : `Upstream ZotFlow ${target.tag} available`;
+        const title = `Upstream ZotFlow ${target.tag} available`;
         const block = managedBody(target, recorded);
         let body = block;
         if (existing) {
@@ -308,7 +288,7 @@ export async function checkUpstream({
                     "POST",
                     `/repos/${FORK}/issues/${existing.number}/comments`,
                     {
-                        body: `${notification}\n@tparsons9 — another upstream update is available: [${target.tag ?? target.commit.slice(0, 7)}](${target.url}). Review the updated target in this issue.`,
+                        body: `${notification}\n@tparsons9 — another upstream stable release is available: [${target.tag}](${target.url}). Review the updated target in this issue.`,
                     },
                 );
             }

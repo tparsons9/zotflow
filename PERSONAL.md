@@ -100,14 +100,17 @@ owner remote once with:
 git -C reader/reader remote add upstream https://github.com/duanxianpi/obsidian-zotero-reader.git
 ```
 
-**Reminders:** the weekly workflow checks stable ZotFlow releases and upstream reader
-`master` commits every Monday at 15:17 UTC. Issues are created only in
+**Reminders:** the weekly workflow checks published stable ZotFlow releases every
+Monday at 15:17 UTC. Each alert includes the reader commit pinned by that release
+and a comparison with the adopted reader baseline. Commits on either repository's
+branches do not trigger alerts. Issues are created only in
 `tparsons9/zotflow`, assigned to `tparsons9`, and labeled `upstream-update`. They do
 not appear in the parent's issue list, although a public fork's issues are public.
 Repeated targets produce no new notification; new targets update the corresponding
 open issue and mention you. Closing an issue acknowledges its recorded targets
-without changing the adopted baseline. Reader alerts can describe divergent branches:
-upstream ZotFlow currently pins a reader commit from a different upstream branch.
+without changing the adopted baseline. The reader pin may come from a different
+upstream branch; inspect its comparison before integrating it. Independent reader
+updates are reviewed manually, with no separate commit reminders.
 
 ```bash
 npm run upstream:check -- --dry-run  # read-only diagnostic; needs gh auth or GH_TOKEN
@@ -133,8 +136,10 @@ record its exact pin. Do not blindly choose an entire side of a submodule confli
 Run plugin and reader tests and the full build. Update `.github/upstream-state.json`
 with the stable tag/commit and upstream reader commit actually integrated, keeping
 the original development-base provenance. Merge the reviewed parent result into
-`personal`, push it, and close the update issue. Independent reader updates use the
-same process without changing the recorded ZotFlow stable release. Feature work
+`personal`, push it, and close the update issue. Manually chosen independent reader
+updates use the same process without changing the recorded ZotFlow stable release.
+The reader commit in the state file records adopted provenance; its tracking mode
+is `zotflow-release-pin`, not a branch to monitor. Feature work
 branches from `personal`; upstream contributions are prepared separately from the
 owner's intended base, without personal tooling or submodule URL changes.
 
