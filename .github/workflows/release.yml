@@ -7,7 +7,7 @@ on:
 
 jobs:
     build:
-        if: ${{ !contains(github.ref_name, '-') }}
+        if: ${{ github.repository == 'duanxianpi/zotflow' && !contains(github.ref_name, '-') }}
         runs-on: ubuntu-latest
         permissions:
             contents: write

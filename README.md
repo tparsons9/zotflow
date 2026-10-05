@@ -2,6 +2,11 @@
 
 English | [简体中文](README.zh-CN.md)
 
+> **Personal build:** `personal` is the default branch of `tparsons9/zotflow`.
+> It retains the annotation-profile and category-layout work, with upstream
+> attribution and plugin ID unchanged. See [Personal maintenance](#personal-maintenance)
+> for reminders, updates, and installation into your own vault.
+
 > **Your Zotero library, your reader, your notes — one seamless workspace inside Obsidian.**
 
 ZotFlow is a community plugin for [Obsidian](https://obsidian.md) that brings the full power of [Zotero](https://www.zotero.org) into your vault. Read papers, annotate PDFs, generate templated source notes, and cite literature — all without ever leaving Obsidian.
@@ -143,6 +148,100 @@ Communication: [Comlink](https://github.com/GoogleChromeLabs/comlink) (main ↔ 
 ---
 
 ## Development
+
+### Personal maintenance
+
+This fork keeps a customized build on `personal`, while contribution PR branches
+remain separate. The current base includes upstream development work after stable
+1.6.6, including database schema 7. Future stable releases are merged into this
+history; the build is not represented as stock 1.6.6 merely because its manifest
+still carries the upstream version.
+
+The reader is a pinned submodule of `tparsons9/obsidian-zotero-reader`. Push reader
+commits to that fork before pushing parent commits that reference them. A fresh
+checkout uses `git clone --recurse-submodules`, then `npm ci`. Configure the reader's
+owner remote once with:
+
+```bash
+git -C reader/reader remote add upstream https://github.com/duanxianpi/obsidian-zotero-reader.git
+```
+
+**Reminders:** the weekly workflow checks stable ZotFlow releases and upstream reader
+`master` commits every Monday at 15:17 UTC. Issues are created only in
+`tparsons9/zotflow`, assigned to `tparsons9`, and labeled `upstream-update`. They do
+not appear in the parent's issue list, although a public fork's issues are public.
+Repeated targets produce no new notification; new targets update the corresponding
+open issue and mention you. Closing an issue acknowledges its recorded targets
+without changing the adopted baseline. Reader alerts can describe divergent branches:
+upstream ZotFlow currently pins a reader commit from a different upstream branch.
+
+```bash
+npm run upstream:check -- --dry-run  # read-only diagnostic; needs gh auth or GH_TOKEN
+gh workflow run upstream-check.yml --repo tparsons9/zotflow --ref personal
+```
+
+On upstream ZotFlow, select **Watch → Custom → Releases**. In GitHub's notification
+settings, enable email for watching and participation/mentions, and enable Actions
+failure notifications. Subscribe to each update issue. Schedules run on the default
+branch and public repositories can lose scheduled execution after 60 days without
+activity. If that happens, re-enable **Check upstream updates** in the fork's Actions
+tab and manually dispatch it. Release email is the independent fallback.
+
+**Adopt an update:** create a review branch from `personal`. Fetch upstream changes
+in both repositories. Inspect the exact stable release tag and its reader pin
+(`git ls-tree <tag> reader/reader`). Merge needed upstream reader changes on a reader
+review branch, preserving annotation profiles; publish its reviewed result to the
+reader's `personal` branch. Merge the exact ZotFlow release tag into the parent
+review branch and resolve code conflicts individually. Keep the fork URL in
+`.gitmodules`, check out the merged custom reader, and `git add reader/reader` to
+record its exact pin. Do not blindly choose an entire side of a submodule conflict.
+
+Run plugin and reader tests and the full build. Update `.github/upstream-state.json`
+with the stable tag/commit and upstream reader commit actually integrated, keeping
+the original development-base provenance. Merge the reviewed parent result into
+`personal`, push it, and close the update issue. Independent reader updates use the
+same process without changing the recorded ZotFlow stable release. Feature work
+branches from `personal`; upstream contributions are prepared separately from the
+owner's intended base, without personal tooling or submodule URL changes.
+
+**Install:** close reader tabs and disable ZotFlow in the destination vault first.
+Then run:
+
+```bash
+npm run install:personal -- --dry-run
+npm run install:personal
+npm run status:personal
+```
+
+The default vault is `~/vaults/tanners-vault`; all three commands accept
+`--vault "/another/vault"`. Installation requires a clean `personal` branch and
+initialized, clean submodules at their committed pins. It runs `npm test`, the
+reader's tests, and `npm run build:ci` before copying anything. This always rebuilds
+the reader rather than bundling stale assets. Enable ZotFlow again afterward.
+
+Only `main.js`, `manifest.json`, `styles.css`, and the generated reader license
+notice are managed. Settings, notes, annotation sidecars, credentials, and existing
+Enhancement Pack contents are preserved. Ordinary copies keep everyday use separate
+from the isolated harness's Hot Reload links. Do not add this installation to BRAT
+or use the community directory's Update action: those would replace your custom
+build. `status:personal` verifies hashes even when both builds have the same version.
+
+Receipts and timestamped backups live under gitignored `.personal/`, keyed by vault.
+The receipt records the parent/reader commits, upstream provenance, database schema,
+and installed artifact hashes. A failed copy restores the previous artifact set.
+For a verified backup from a prior personal build with the same database schema:
+
+```bash
+npm run rollback:personal -- --backup <id> --dry-run
+npm run rollback:personal -- --backup <id>
+```
+
+Disable ZotFlow before rollback and enable it afterward. **Artifact rollback does
+not undo database migrations or settings changes.** Unknown-schema installations
+(including the original community build) are backed up but cannot be restored by
+the automated rollback command. Cross-schema recovery needs separate review; never
+delete IndexedDB to force a downgrade when it may hold unsynced edits. Run upgrade
+tests only in the isolated profile with a dedicated Zotero test library.
 
 ### Prerequisites
 

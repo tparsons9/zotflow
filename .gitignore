@@ -44,3 +44,6 @@ note-editor/note-editor/
 
 # Local Obsidian test harness (config, vault, profile, screenshots)
 .obsidian-test/
+
+# Personal installation receipts, backups and machine-local state
+.personal/

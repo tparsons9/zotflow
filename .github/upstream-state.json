@@ -1,0 +1,13 @@
+{
+    "zotflow": {
+        "repository": "duanxianpi/zotflow",
+        "tag": "1.6.6",
+        "commit": "8f85e05d51a996c0ad6cc3ad9417f5776eb2363e",
+        "developmentBase": "6a65f704441f5a88e543d9bb7542702c14947960"
+    },
+    "reader": {
+        "repository": "duanxianpi/obsidian-zotero-reader",
+        "branch": "master",
+        "commit": "e6dfec2857b1e008a416832e1bd9df868513b035"
+    }
+}

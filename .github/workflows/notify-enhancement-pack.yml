@@ -10,6 +10,7 @@ on:
 
 jobs:
     notify:
+        if: github.repository == 'duanxianpi/zotflow'
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4

@@ -13,6 +13,7 @@ export default defineConfig(
         // live:obsidian harness state: a vault with linked main.js and an
         // Obsidian profile full of Chromium caches.
         ".obsidian-test/**",
+        ".personal/**",
         "reader/reader/**",
         "note-editor/note-editor/**",
         "zotflow-enhancement-pack/**",

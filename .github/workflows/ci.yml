@@ -5,10 +5,12 @@ on:
         branches:
             - master
             - dev
+            - personal
     pull_request:
         branches:
             - master
             - dev
+            - personal
 
 concurrency:
     group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -39,3 +41,6 @@ jobs:
 
             - name: Build release artifacts
               run: npm run build:ci
+
+            - name: Test reader
+              run: npm test --prefix reader/reader

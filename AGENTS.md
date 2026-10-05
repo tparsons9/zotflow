@@ -943,6 +943,32 @@ the developer's own and must never be committed or echoed.
 
 ## 13. Versioning & Releases
 
+### Personal fork exception (`tparsons9/zotflow`)
+
+- `personal` is this fork's default and persistent working branch. It preserves
+  the existing annotation PRs and upstream development base; do not reset it to a
+  stable release or rewrite the PR branches.
+- Contributions use separate branches from the owner's intended base. Personal
+  reminder/installation tooling and the fork reader URL do not belong in upstream PRs.
+- On `personal`, `.gitmodules` points at `tparsons9/obsidian-zotero-reader`;
+  publish custom reader commits before parent commits referring to them.
+- Adopt stable upstream tags through reviewed merges, coordinating the custom
+  reader pin. Update `.github/upstream-state.json` only for changes actually adopted.
+  Preserve plugin ID, command IDs, upstream versions and author attribution.
+- The weekly watcher may write only update issues/labels in `tparsons9/zotflow`.
+  Do not publish releases or dispatch the owner's Enhancement Pack workflows from
+  this fork. The inherited publishing jobs are guarded by repository identity.
+- `npm run install:personal` runs tests and the full build before copying regular
+  artifacts into `~/vaults/tanners-vault`. Close readers and disable ZotFlow first;
+  enable it afterward. Use `--dry-run` to preview and `status:personal` to verify.
+  Never point the isolated harness or Hot Reload at the personal vault.
+- `.personal/` holds gitignored receipts/backups. Preserve vault settings, notes,
+  sidecars, credentials and Enhancement Pack contents. Rollback must verify hashes
+  and reject unknown/different database schemas; files do not reverse migrations.
+- See README's Personal maintenance section for the complete update/install loop.
+
+### Upstream release policy
+
 - `dev` is the only long-lived development branch; `master` contains only
   versions that have already been published as stable releases.
 - Create beta releases from a clean, synchronized `dev` with
